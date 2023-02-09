@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<title>My first three.js app</title>
+		<style>
+			body { margin: 0; }
+		</style>
+	</head>
+	<body>
+		<script src="three.js"></script>
+        <script src="OrbitControls.js"></script>
+        <input type="range" min="5" max="8" value="0" step="0.05" id="slider" orient="vertical" style="position:top;">
+        <input type="range" min="-90" max="90" value="0" step="0.05" id="slider1" orient="vertical" style="position:bottom;">
+        <input type="range" min="-45" max="45" value="0" step="0.05" id="slider2" orient="vertical" style="position:sticky;">
+		<script>
+            var m = 1;
+			var scene = new THREE.Scene();
+            var camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 1000 );
+            
+            var renderer = new THREE.WebGLRenderer();
+            renderer.setSize( window.innerWidth, window.innerHeight );
+            renderer.setClearColor(new THREE.Color(0xEEEEEE));
+            renderer.shadowMap.enabled = true;
+            
+            document.body.appendChild( renderer.domElement );
+            controls = new THREE.OrbitControls( camera, renderer.domElement );
+
+            window.addEventListener('resize', function(){
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            })
+            
+            var loader = new THREE.TextureLoader();
+            
+            var panelG = new THREE.BoxGeometry( 4, 0.1, 6 );
+            var texture = loader.load("panel.jpg");
+            var material2 = new THREE.MeshPhysicalMaterial( { 
+                map: texture,
+                alphaMap: texture,
+                transparent: true,
+                opacity: 2,
+                side: THREE.DoubleSide
+                 } );
+            var panel = new THREE.Mesh( panelG, material2);
+            panel.position.set(0, 0, 0);
+            scene.add( panel );
+
+            var sunG = new THREE.SphereGeometry( 100/218.49, 32, 32 );
+            var texture3 = loader.load("2k_sun.jpg");
+            var material3 = new THREE.MeshPhysicalMaterial( { 
+                map: texture3,
+                 } );
+            var sun = new THREE.Mesh( sunG, material3);
+            sun.position.set(
+                    Math.cos(5) * 10,
+                    Math.cos(5) * 10,
+                    Math.sin(5) * 10, );
+            scene.add( sun );
+
+            camera.position.set(0, 10, 20);
+            var plane = new THREE.Mesh(new THREE.PlaneGeometry(60, 30), new THREE.MeshPhysicalMaterial({
+                color: 0xFFFFFF,
+                metalness: 0,
+                side: THREE.DoubleSide
+            }));
+            plane.rotation.x = Math.PI / 2;
+            
+            var background = loader.load("stars_milky_way.jpg");
+            scene.background = background;
+
+            var spotLight = new THREE.SpotLight(0xFFFFFF);
+            spotLight.position.set(-4, 6, -10);
+            scene.add(spotLight);
+            
+            plane.receiveShadow = true;
+            spotLight.castShadow = true;
+            spotLight.add(new THREE.AxesHelper(5));
+            const light = new THREE.AmbientLight( 0xFFFFFF );
+            scene.add( light );
+            light.castShadow = true;
+            
+            sun.castShadow = true;
+            panel.receiveShadow = true;
+            
+            var sliderSun = document.getElementById("slider");
+            sliderSun.addEventListener("input", moveSun);
+            var sliderPanelx = document.getElementById("slider1");
+            sliderPanelx.addEventListener("input", rotatePanely);
+            var sliderPanely = document.getElementById("slider2");
+            sliderPanely.addEventListener("input", rotatePanelz);
+            
+            function moveSun(e){
+                var target = (e.target) ? e.target : e.srcElement;
+                sun.position.set(
+                    Math.cos(target.value) * 10,
+                    Math.cos(target.value) * 10,
+                    Math.sin(target.value) * 10, );
+            }
+            function rotatePanely(e) {
+                var target = (e.target) ? e.target : e.srcElement;
+                panel.rotation.y = THREE.Math.degToRad( target.value );
+            }
+
+            function rotatePanelz(e) {
+                var target = (e.target) ? e.target : e.srcElement;
+                panel.rotation.z = THREE.Math.degToRad( target.value );
+            }
+
+            function animate() {   
+                const tempSun = new THREE.Vector3();
+                sun.getWorldPosition(tempSun);
+                const tempPanel = new THREE.Vector3();
+                panel.getWorldPosition(tempPanel);
+                const tempPanelDirection = new THREE.Vector3();
+                panel.getWorldDirection(tempPanelDirection);
+
+                var directionToSun = new THREE.Vector3();
+                directionToSun.subVectors(tempSun, tempPanel);
+
+                var qrot = new THREE.Quaternion();
+                qrot.setFromUnitVectors(directionToSun, tempPanelDirection);
+
+                console.log(directionToSun);
+                console.log("tempPanel ", tempPanelDirection);
+                console.log("quater", qrot);
+
+                controls.update();
+                requestAnimationFrame( animate );
+                renderer.render( scene, camera );
+            }
+            animate();
+		</script>
+	</body>
+</html>
